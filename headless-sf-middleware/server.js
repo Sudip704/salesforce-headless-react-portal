@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // 1. Load the private key from the local filesystem
-const privateKey = fs.readFileSync('./server.key', 'utf8');
+const privateKey = process.env.PRIVATE_KEY ? process.env.PRIVATE_KEY.replace(/\\n/g, '\n') : fs.readFileSync('./server.key', 'utf8');
 
 // 2. Authentication Helper Function
 async function getSalesforceConnection() {
