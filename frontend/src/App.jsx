@@ -3,7 +3,7 @@ import axios from 'axios';
 import { PlusCircle, RefreshCw, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import './App.css';
 
-const API_BASE = 'http://salesforce-headless-api-env.eba-wmvpv8mr.eu-north-1.elasticbeanstalk.com/api/cases';
+const API_BASE = 'https://salesforce-headless-react-portal.onrender.com/api/cases';
 
 export default function App() {
   const [cases, setCases] = useState([]);
