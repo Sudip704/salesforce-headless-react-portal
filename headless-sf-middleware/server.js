@@ -11,7 +11,21 @@ app.use(cors());
 app.use(express.json());
 
 // 1. Load the private key from the local filesystem
-const privateKey = process.env.PRIVATE_KEY ? process.env.PRIVATE_KEY.replace(/\\n/g, '\n') : fs.readFileSync('./server.key', 'utf8');
+let privateKey;
+if (process.env.PRIVATE_KEY) {
+    // 1. Remove accidental quotes and evaluate literal \n
+    privateKey = process.env.PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+    
+    // 2. If Render stripped newlines into spaces, reconstruct the PEM format
+    if (!privateKey.includes('\n')) {
+        privateKey = privateKey
+          .replace(/\s+/g, '\n')
+          .replace(/-----BEGIN\nRSA\nPRIVATE\nKEY-----/, '-----BEGIN RSA PRIVATE KEY-----')
+          .replace(/-----END\nRSA\nPRIVATE\nKEY-----/, '-----END RSA PRIVATE KEY-----');
+    }
+} else {
+    privateKey = fs.readFileSync('./server.key', 'utf8');
+}
 
 // 2. Authentication Helper Function
 async function getSalesforceConnection() {
