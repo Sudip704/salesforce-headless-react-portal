@@ -10,11 +10,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Load the private key from the local filesystem
+// 1. Declare privateKey globally so all functions can access it
+let privateKey = '';
+
+// 2. Load the private key
 if (process.env.PRIVATE_KEY_BASE64) {
-    // 1. Remove accidental quotes and evaluate literal \n
-    const privateKey = process.env.PRIVATE_KEY_BASE64 ? Buffer.from(process.env.PRIVATE_KEY_BASE64, 'base64').toString('utf8') : fs.readFileSync('./server.key', 'utf8');
-    // 2. If Render stripped newlines into spaces, reconstruct the PEM format
+    // Base64 decoding safely restores the exact multiline format automatically
+    privateKey = Buffer.from(process.env.PRIVATE_KEY_BASE64, 'base64').toString('utf8');
+} else if (process.env.PRIVATE_KEY) {
+    // Fallback if using standard text pasting
+    privateKey = process.env.PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
     if (!privateKey.includes('\n')) {
         privateKey = privateKey
           .replace(/\s+/g, '\n')
@@ -22,10 +27,11 @@ if (process.env.PRIVATE_KEY_BASE64) {
           .replace(/-----END\nRSA\nPRIVATE\nKEY-----/, '-----END RSA PRIVATE KEY-----');
     }
 } else {
+    // Local development fallback
     privateKey = fs.readFileSync('./server.key', 'utf8');
 }
 
-// 2. Authentication Helper Function
+// 3. Authentication Helper Function
 async function getSalesforceConnection() {
     // Construct the JWT Payload
     const claim = {
@@ -61,7 +67,7 @@ async function getSalesforceConnection() {
     }
 }
 
-// 3. API Endpoint to Fetch Cases
+// 4. API Endpoint to Fetch Cases
 app.get('/api/cases', async (req, res) => {
     try {
         const conn = await getSalesforceConnection();
@@ -71,7 +77,6 @@ app.get('/api/cases', async (req, res) => {
         
         // Send the clean data back to the React frontend
         res.json(result.records);
-   // Replace lines 62-64 in server.js with this:
     } catch (error) {
         console.error('Salesforce Query Error:', error);
         res.status(500).json({ 
@@ -81,13 +86,7 @@ app.get('/api/cases', async (req, res) => {
     }
 });
 
-// 4. Start the server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`Salesforce Middleware running on http://localhost:${PORT}`);
-});
-
-// POST /api/cases - Create a new support ticket in Salesforce
+// 5. API Endpoint to Create a New Ticket
 app.post('/api/cases', async (req, res) => {
     try {
         const { subject, description, priority } = req.body;
@@ -110,4 +109,10 @@ app.post('/api/cases', async (req, res) => {
         console.error('Case Creation Error:', error);
         res.status(500).json({ error: 'Failed to create case', details: error.message });
     }
+});
+
+// 6. Start the server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+    console.log(`Salesforce Middleware running on http://localhost:${PORT}`);
 });
