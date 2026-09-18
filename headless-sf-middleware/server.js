@@ -11,11 +11,9 @@ app.use(cors());
 app.use(express.json());
 
 // 1. Load the private key from the local filesystem
-let privateKey;
-if (process.env.PRIVATE_KEY) {
+if (process.env.PRIVATE_KEY_BASE64) {
     // 1. Remove accidental quotes and evaluate literal \n
-    privateKey = process.env.PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
-    
+    const privateKey = process.env.PRIVATE_KEY_BASE64 ? Buffer.from(process.env.PRIVATE_KEY_BASE64, 'base64').toString('utf8') : fs.readFileSync('./server.key', 'utf8');
     // 2. If Render stripped newlines into spaces, reconstruct the PEM format
     if (!privateKey.includes('\n')) {
         privateKey = privateKey
